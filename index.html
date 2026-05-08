@@ -178,18 +178,16 @@ button{border:0;cursor:pointer}
 .player-meta{color:#bbb;font-size:13px;margin-top:3px}
 .timer{margin-left:auto;font-size:14px;color:#ddd;font-variant-numeric:tabular-nums}
 
-.profiles-screen{position:fixed;inset:0;background:#141414;z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.profiles-screen{position:fixed;inset:0;background:#141414;z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .6s ease}
 .profiles-screen.active{opacity:1;pointer-events:auto}
-.profiles-screen h1{font-size:3.5vw;font-weight:500;color:#fff;margin-bottom:2em;letter-spacing:1px}
-.profiles-list{display:flex;gap:2vw;justify-content:center;flex-wrap:wrap}
-.profile-card{display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:10px}
+.profiles-screen h1{font-size:clamp(30px, 3.5vw, 44px);font-weight:500;color:#fff;margin-bottom:2em;letter-spacing:1px}
+.profiles-list{display:flex;gap:3vw;justify-content:center;flex-wrap:wrap}
+.profile-card{display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:6px}
 .profile-card:hover .avatar{border-color:#fff}
 .profile-card:hover .name{color:#fff}
-.avatar{width:10vw;height:10vw;min-width:84px;min-height:84px;max-width:150px;max-height:150px;border-radius:4px;border:3px solid transparent;transition:border-color .2s;display:flex;align-items:center;justify-content:center;font-size:4vw;font-weight:bold}
-.name{color:#808080;font-size:1.3vw;transition:color .2s}
+.avatar{width:11vw;height:11vw;min-width:84px;min-height:84px;max-width:150px;max-height:150px;border-radius:4px;border:3px solid transparent;transition:border-color .2s;display:flex;align-items:center;justify-content:center;background-size:cover;background-position:center;background-color:#333;font-size:42px;color:#fff;font-weight:400}
+.name{color:#808080;font-size:clamp(14px, 1.3vw, 18px);margin-top:4px;transition:color .2s}
 .top10-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;font-size:8px;font-weight:900;padding:4px 3px;text-align:center;line-height:1.1;letter-spacing:.5px;border-radius:0 0 2px 2px;box-shadow:0 2px 4px rgba(0,0,0,.5);z-index:5}
-.skip-intro{position:absolute;bottom:80px;right:36px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 20px;font-size:16px;font-weight:600;cursor:pointer;border-radius:4px;transition:background .2s;z-index:10;display:none}
-.skip-intro:hover{background:rgba(255,255,255,.2)}
 .series-label b{color:var(--red);display:inline-block;font-size:22px;margin-right:6px;font-weight:900}
 
 .toast{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);z-index:1000;background:#181818;border-left:3px solid var(--red);padding:11px 20px;border-radius:4px;color:#fff;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s ease}
@@ -239,16 +237,16 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   <h1>Who's watching?</h1>
   <div class="profiles-list">
     <div class="profile-card" onclick="selectProfile('Stella')">
-      <div class="avatar" style="background-color: var(--red); color: white;">S</div>
+      <div class="avatar" style="background-image: url('cherry blossom 2.jpg');"></div>
       <div class="name">Stella</div>
     </div>
     <div class="profile-card" onclick="selectProfile('Dima')">
-      <div class="avatar" style="background-color: #333; color: white;">D</div>
+      <div class="avatar" style="background-image: url('whistler 2.jpg');"></div>
       <div class="name">Dima</div>
     </div>
-    <div class="profile-card" onclick="selectProfile('Kids')">
-      <div class="avatar" style="background-color: #1a4f8b; color: white;">K</div>
-      <div class="name">Kids</div>
+    <div class="profile-card" onclick="selectProfile('Guest')">
+      <div class="avatar">+</div>
+      <div class="name">Guest</div>
     </div>
   </div>
 </div>
@@ -337,7 +335,6 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   <div class="player-frame-next" id="player-frame-next"></div>
   <div class="player-vignette"></div>
   <button class="player-back" onclick="closePlayer()">← <span>Back to Browse</span></button>
-  <button class="skip-intro" id="skip-intro" onclick="skipIntro()">Skip Intro</button>
   <div class="player-controls">
     <div class="bar"><span id="playbar"></span></div>
     <div class="player-row">
@@ -676,33 +673,8 @@ function openPlayer(id, startIndex=0){
   $('player').classList.add('open');
   document.body.style.overflow = 'hidden';
   
-  const skipBtn = $('skip-intro');
-  if(skipBtn) {
-    skipBtn.style.display = 'block';
-    setTimeout(() => { if(skipBtn) skipBtn.style.display = 'none'; }, 6000);
-  }
-
   clearInterval(playerTimer);
   playerTimer = setInterval(tickPlayer, 100);
-  updatePlayer();
-}
-
-function skipIntro(){
-  playerTime += 15;
-  $('skip-intro').style.display = 'none';
-  const total = playerMemory ? playerMemory.photos.length * secondsPerPhoto : 0;
-  if (playerTime >= total) playerTime = total - 0.1;
-  const newIndex = Math.floor(playerTime / secondsPerPhoto);
-  if(playerMemory && newIndex !== playerIndex) {
-    playerIndex = newIndex;
-    const next = $('player-frame-next'), current = $('player-frame');
-    next.style.backgroundImage = `url('${playerMemory.photos[playerIndex]}')`;
-    next.style.opacity = '1';
-    setTimeout(()=>{
-      current.style.backgroundImage = next.style.backgroundImage;
-      next.style.opacity = '0';
-    }, 560);
-  }
   updatePlayer();
 }
 function tickPlayer(){
