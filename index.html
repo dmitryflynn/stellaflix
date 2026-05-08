@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icon_transparent.png">
+<link rel="icon" type="image/png" href="icon_transparent.png">
+<link rel="manifest" href="manifest.json">
+<title>StellaFlix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#e50914;
+  --red-dark:#b20710;
+  --black:#0b0b0b;
+  --panel:#141414;
+  --panel-2:#1f1f1f;
+  --line:#333;
+  --text:#fff;
+  --muted:#b3b3b3;
+  --soft:#808080;
+  --green:#46d369;
+  --gold:#d4af37;
+  --logo:'Bebas Neue','Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  --sans:'Inter','Netflix Sans','Helvetica Neue',Arial,sans-serif;
+}
+html{background:#000;color:var(--text);font-family:var(--sans);scroll-behavior:smooth}
+body{min-height:100vh;background:#000;overflow:hidden}
+button,input{font:inherit}
+button{border:0;cursor:pointer}
+
+/* Intro: canvas does the heavy motion, DOM stays tiny. */
+#intro{
+  position:fixed;inset:0;z-index:9999;background:#000;display:grid;place-items:center;
+  opacity:1;transition:opacity .34s ease,visibility .34s ease;overflow:hidden;
+}
+#intro.done{opacity:0;visibility:hidden;pointer-events:none}
+#intro-canvas{width:100%;height:100%;display:block}
+
+#app{opacity:0;min-height:100vh;background:#000;transition:opacity .45s ease}
+#app.ready{opacity:1}
+
+/* Navigation */
+.nav{
+  position:fixed;inset:0 0 auto 0;height:68px;z-index:100;display:flex;align-items:center;
+  padding:0 4vw;background:linear-gradient(to bottom,rgba(0,0,0,.86),rgba(0,0,0,.55) 46%,transparent);
+  transition:background .28s ease;
+}
+.nav.scrolled{background:#0b0b0b}
+.brand{
+  font-family:var(--logo);font-size:38px;line-height:1;color:var(--red);
+  letter-spacing:1.2px;text-transform:uppercase;margin-right:34px;
+}
+.nav-links{display:flex;gap:20px;align-items:center}
+.nav-links a{font-size:13px;color:#e5e5e5;text-decoration:none;font-weight:500}
+.nav-links a:hover,.nav-links a.active{color:#fff}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.icon-btn{
+  width:34px;height:34px;border-radius:4px;background:transparent;color:#fff;display:grid;place-items:center;
+  opacity:.86;transition:opacity .2s,color .2s,background .2s;
+}
+.icon-btn:hover{opacity:1;background:rgba(255,255,255,.08)}
+.icon-btn.active{color:var(--gold);opacity:1}
+.icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.search-shell{
+  width:0;opacity:0;overflow:hidden;border:1px solid transparent;background:rgba(0,0,0,.75);
+  transition:width .24s ease,opacity .2s ease,border-color .2s ease;
+}
+.search-shell.open{width:260px;opacity:1;border-color:#555}
+.search-shell input{width:100%;height:34px;background:transparent;border:0;color:#fff;outline:0;padding:0 12px;font-size:13px}
+.profile{
+  width:34px;height:34px;border-radius:4px;background:var(--red);
+  color:#fff;display:grid;place-items:center;cursor:pointer;
+  transition:transform .2s,opacity .2s;
+}
+.profile:hover{opacity:.84;transform:scale(1.05)}
+.profile::after{content:"S";font-family:var(--logo);font-size:20px;margin-top:2px}
+
+/* Hero */
+.hero{position:relative;height:86vh;min-height:610px;display:flex;align-items:flex-end;overflow:hidden;background:#000}
+.hero-bg,.hero-bg-next{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .85s ease}
+.hero-bg-next{opacity:0}
+.hero::after{
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(to top,#000 0%,rgba(0,0,0,.72) 14%,rgba(0,0,0,.18) 46%,rgba(0,0,0,.06) 100%),
+    linear-gradient(to right,rgba(0,0,0,.82) 0%,rgba(0,0,0,.5) 34%,rgba(0,0,0,.08) 67%,transparent);
+}
+.hero-content{position:relative;z-index:2;width:min(620px,92vw);margin-left:4vw;margin-bottom:92px}
+.series-label{display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#e7e7e7;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.series-label b{font-family:var(--logo);font-size:28px;letter-spacing:1px;color:var(--red);line-height:1}
+.hero-title{font-size:clamp(44px,6.2vw,84px);line-height:.93;font-weight:900;letter-spacing:-.035em;text-shadow:0 3px 18px rgba(0,0,0,.72);margin-bottom:18px}
+.hero-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px;font-weight:700;margin-bottom:14px}
+.match{color:var(--green)}
+.age{border:1px solid #aaa;padding:1px 6px;color:#ddd}
+.hero-desc{max-width:560px;color:#e5e5e5;font-size:17px;line-height:1.42;text-shadow:0 2px 10px rgba(0,0,0,.8);margin-bottom:26px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.primary,.secondary{
+  height:46px;border-radius:4px;padding:0 26px;display:inline-flex;align-items:center;gap:10px;
+  font-size:17px;font-weight:800;transition:opacity .18s ease,transform .18s ease;
+}
+.primary{background:#fff;color:#000}
+.secondary{background:rgba(109,109,110,.72);color:#fff}
+.primary:hover,.secondary:hover{opacity:.84;transform:scale(1.02)}
+.primary svg,.secondary svg{width:21px;height:21px;fill:currentColor}
+.hero-dots{position:absolute;right:4vw;bottom:96px;z-index:3;display:flex;gap:8px}
+.dot{width:10px;height:3px;background:rgba(255,255,255,.36);border-radius:10px;transition:background .2s,width .2s}
+.dot.active{width:28px;background:#fff}
+
+/* Rows */
+.content{position:relative;z-index:5;margin-top:-66px;padding:0 0 72px}
+.row{margin-bottom:-84px;position:relative;z-index:1}
+.row:hover{z-index:10}
+.row-head{display:flex;align-items:baseline;gap:10px;padding:0 4vw;margin-bottom:-20px;position:relative;z-index:2}
+.row-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.row-sub{font-size:13px;color:var(--muted);font-weight:500}
+.rail{display:flex;gap:8px;overflow-x:auto;overflow-y:visible;padding:30px 4vw 140px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.card{
+  flex:0 0 244px;height:137px;border-radius:3px;background-size:cover;background-position:center;background-color:#202020;
+  position:relative;cursor:pointer;transition:transform .22s ease,box-shadow .22s ease;transform-origin:center bottom;
+}
+.card:hover{transform:scale(1.18);z-index:20;box-shadow:0 18px 50px rgba(0,0,0,.78)}
+.card::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88),transparent 62%);opacity:0;transition:opacity .2s ease;border-radius:3px}
+.card:hover::before{opacity:1}
+.progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.22)}
+.progress span{display:block;height:100%;background:var(--red)}
+.card-panel{
+  position:absolute;left:0;right:0;top:100%;background:#181818;border-radius:0 0 4px 4px;padding:10px;
+  opacity:0;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease;box-shadow:0 18px 35px rgba(0,0,0,.7);
+}
+.card:hover .card-panel{opacity:1;transform:translateY(0)}
+.card-actions{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.round{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid #aaa;background:transparent;color:#fff;font-size:12px}
+.round.play{background:#fff;color:#000;border-color:#fff}
+.round:hover{border-color:#fff}
+.card-name{font-size:12px;font-weight:800;margin-bottom:4px}
+.card-data{display:flex;gap:7px;align-items:center;font-size:10px;color:#bdbdbd;flex-wrap:wrap}
+.hearts{color:var(--red);letter-spacing:1px}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.74);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:38px 16px;overflow:auto}
+.modal.open{display:flex}
+.modal-card{width:min(900px,94vw);background:#181818;border-radius:6px;overflow:hidden;box-shadow:0 28px 90px rgba(0,0,0,.85);position:relative}
+.modal-hero{height:410px;background-size:cover;background-position:center;position:relative}
+.modal-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,#181818 0%,rgba(24,24,24,.42) 44%,transparent)}
+.close{position:absolute;top:16px;right:16px;z-index:2;width:34px;height:34px;border-radius:50%;background:#181818;color:#fff;font-size:20px}
+.modal-body{position:relative;margin-top:-108px;padding:0 32px 32px}
+.modal-title{font-size:44px;font-weight:900;letter-spacing:-.035em;margin-bottom:12px;text-shadow:0 3px 18px rgba(0,0,0,.8)}
+.modal-buttons{display:flex;gap:10px;margin-bottom:18px;align-items:center}
+.circle{width:42px;height:42px;border-radius:50%;border:2px solid #777;background:transparent;color:#fff;font-size:18px}
+.modal-grid{display:grid;grid-template-columns:1fr 250px;gap:34px;margin-top:18px}
+.modal-desc{font-size:16px;line-height:1.58;color:#eee}
+.credits{font-size:13px;line-height:1.8;color:#aaa}
+.credits b{color:#fff}
+.gallery{display:flex;gap:8px;overflow-x:auto;margin-top:26px;padding-bottom:10px;scrollbar-width:none}
+.thumb{flex:0 0 174px;height:98px;background-size:cover;background-position:center;border-radius:3px;cursor:pointer;border:2px solid transparent}
+.thumb:hover{border-color:#fff}
+
+/* Player */
+.player{display:none;position:fixed;inset:0;z-index:900;background:#000;color:#fff}
+.player.open{display:block}
+.player-frame,.player-frame-next{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;transition:opacity .55s ease}
+.player-frame-next{opacity:0}
+.player-vignette{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72),transparent 38%),linear-gradient(to bottom,rgba(0,0,0,.55),transparent 22%)}
+.player-back{position:absolute;top:30px;left:34px;display:flex;align-items:center;gap:14px;color:#fff;background:transparent;font-size:20px;font-weight:800;z-index:3}
+.player-controls{position:absolute;left:36px;right:36px;bottom:28px;z-index:3}
+.bar{height:4px;background:rgba(255,255,255,.26);border-radius:3px;overflow:hidden;margin-bottom:20px}
+.bar span{display:block;height:100%;width:0;background:var(--red)}
+.player-row{display:flex;align-items:center;gap:18px}
+.player-title{font-weight:800;font-size:20px}
+.player-meta{color:#bbb;font-size:13px;margin-top:3px}
+.timer{margin-left:auto;font-size:14px;color:#ddd;font-variant-numeric:tabular-nums}
+
+.profiles-screen{position:fixed;inset:0;background:#141414;z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.profiles-screen.active{opacity:1;pointer-events:auto}
+.profiles-screen h1{font-size:3.5vw;font-weight:500;color:#fff;margin-bottom:2em;letter-spacing:1px}
+.profiles-list{display:flex;gap:2vw;justify-content:center;flex-wrap:wrap}
+.profile-card{display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:10px}
+.profile-card:hover .avatar{border-color:#fff}
+.profile-card:hover .name{color:#fff}
+.avatar{width:10vw;height:10vw;min-width:84px;min-height:84px;max-width:150px;max-height:150px;border-radius:4px;border:3px solid transparent;transition:border-color .2s;display:flex;align-items:center;justify-content:center;font-size:4vw;font-weight:bold}
+.name{color:#808080;font-size:1.3vw;transition:color .2s}
+.top10-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;font-size:8px;font-weight:900;padding:4px 3px;text-align:center;line-height:1.1;letter-spacing:.5px;border-radius:0 0 2px 2px;box-shadow:0 2px 4px rgba(0,0,0,.5);z-index:5}
+.skip-intro{position:absolute;bottom:80px;right:36px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.4);color:#fff;padding:10px 20px;font-size:16px;font-weight:600;cursor:pointer;border-radius:4px;transition:background .2s;z-index:10;display:none}
+.skip-intro:hover{background:rgba(255,255,255,.2)}
+.series-label b{color:var(--red);display:inline-block;font-size:22px;margin-right:6px;font-weight:900}
+
+.toast{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);z-index:1000;background:#181818;border-left:3px solid var(--red);padding:11px 20px;border-radius:4px;color:#fff;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.coming-soon{margin:40px 4vw 0;padding:60px 40px;background:linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.85)),url('birthday 3.jpg') center/cover;border-radius:6px;border:1px solid rgba(255,255,255,0.1);text-align:center;position:relative}
+.cs-label{color:var(--red);font-weight:800;letter-spacing:3px;font-size:14px;margin-bottom:16px}
+.cs-title{font-size:42px;font-weight:900;margin-bottom:16px;text-shadow:0 4px 12px rgba(0,0,0,0.5);line-height:1.1}
+.cs-desc{color:#ccc;max-width:600px;margin:0 auto 30px;font-size:16px;line-height:1.5}
+.cs-date{display:inline-block;padding:12px 30px;background:rgba(255,255,255,0.15);border-radius:4px;backdrop-filter:blur(10px);font-weight:800;letter-spacing:1px;color:#fff}
+footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:center;font-size:13px;line-height:1.8;margin-top:40px}
+
+@media(max-width:760px){
+  .profiles-screen h1{font-size:28px}
+  .avatar{font-size:32px}
+  .name{font-size:14px}
+  .coming-soon{padding:40px 20px;margin:30px 18px 0}
+  .cs-title{font-size:28px}
+  .cs-desc{font-size:14px}
+  .nav{padding:0 18px;height:54px}.brand{font-size:26px;margin-right:10px}.nav-links{display:none}.search-shell.open{width:140px}
+  .nav-right{gap:12px}
+  .profile{width:28px;height:28px}
+  .profile::after{font-size:16px}
+  .hero{min-height:75vh}.hero-content{margin-left:18px;margin-bottom:60px;width:calc(100% - 36px)}.hero-title{font-size:36px}.hero-desc{font-size:14px;line-height:1.4}
+  .hero-actions{gap:8px}
+  .primary,.secondary{height:38px;padding:0 18px;font-size:14px}
+  .primary svg,.secondary svg{width:16px;height:16px}
+  .hero-dots{display:none}
+  .content{margin-top:-32px}
+  .row{margin-bottom:-64px}
+  .rail{padding:20px 18px 120px;gap:6px}
+  .card{flex-basis:140px;height:78px}
+  .modal-grid{grid-template-columns:1fr;gap:20px}.modal-hero{height:220px}.modal-body{padding:0 18px 24px;margin-top:-60px}.modal-title{font-size:28px}
+  .modal-buttons{margin-bottom:12px;flex-wrap:wrap}
+  .circle{width:36px;height:36px;font-size:16px}
+  .player-back{top:18px;left:18px;font-size:16px}
+  .player-controls{left:18px;right:18px;bottom:18px}
+  .player-row{gap:12px;flex-wrap:wrap}
+  .player-title{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="intro" aria-hidden="true">
+  <canvas id="intro-canvas"></canvas>
+</div>
+
+<div id="profiles" class="profiles-screen">
+  <h1>Who's watching?</h1>
+  <div class="profiles-list">
+    <div class="profile-card" onclick="selectProfile('Stella')">
+      <div class="avatar" style="background-color: var(--red); color: white;">S</div>
+      <div class="name">Stella</div>
+    </div>
+    <div class="profile-card" onclick="selectProfile('Dima')">
+      <div class="avatar" style="background-color: #333; color: white;">D</div>
+      <div class="name">Dima</div>
+    </div>
+    <div class="profile-card" onclick="selectProfile('Kids')">
+      <div class="avatar" style="background-color: #1a4f8b; color: white;">K</div>
+      <div class="name">Kids</div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <audio id="ambient-audio" loop preload="none"><source src="Tame Impala - The Less I Know The Better (Audio).mp3" type="audio/mpeg"></audio>
+  <nav class="nav" id="nav">
+    <div class="brand">STELLAFLIX</div>
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#memories">My Memories</a>
+      <a href="#" onclick="showFavorites(event)">Favorites</a>
+      <a href="#recently">Recently Added</a>
+    </div>
+    <div class="nav-right">
+      <button class="icon-btn" id="search-toggle" aria-label="Search" onclick="toggleSearch()">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      </button>
+      <div class="search-shell" id="search-shell"><input id="search" type="search" placeholder="Titles, places, tags" oninput="runSearch(this.value)"></div>
+      <button class="icon-btn" id="music" aria-label="Ambient music" onclick="toggleMusic()">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+      </button>
+      <div class="profile" title="S + D" onclick="showToast('Profile: Stella &amp; Dima')"></div>
+    </div>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div class="hero-bg" id="hero-bg"></div>
+    <div class="hero-bg-next" id="hero-bg-next"></div>
+    <div class="hero-content">
+      <div class="series-label"><b>S</b> Featured Memory</div>
+      <h1 class="hero-title" id="hero-title"></h1>
+      <div class="hero-meta" id="hero-meta"></div>
+      <p class="hero-desc" id="hero-desc"></p>
+      <div class="hero-actions">
+        <button class="primary" onclick="openPlayer(memories[currentHero].id)">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>Play
+        </button>
+        <button class="secondary" onclick="openModal(memories[currentHero].id)">
+          <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2z"></path><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"></path></svg>More Info
+        </button>
+      </div>
+    </div>
+    <div class="hero-dots" id="hero-dots"></div>
+  </section>
+
+  <main class="content" id="memories">
+    <div id="rows"></div>
+    
+    <div class="coming-soon">
+      <div class="cs-label">COMING SOON</div>
+      <div class="cs-title">Season 18: The Next Chapter</div>
+      <div class="cs-desc">The highly anticipated 18th birthday episode is currently in production. A milestone featuring new adventures, adult privileges, and the best chapter of Stella's life yet.</div>
+      <div class="cs-date">RELEASING SOON</div>
+    </div>
+  </main>
+
+  <footer>StellaFlix Original Collection • Est. 2025<br>Made with ❤️ for Stella</footer>
+</div>
+
+<div class="modal" id="modal" onclick="closeModalOnBackdrop(event)">
+  <div class="modal-card">
+    <button class="close" onclick="closeModal()">×</button>
+    <div class="modal-hero" id="modal-hero"></div>
+    <div class="modal-body">
+      <h2 class="modal-title" id="modal-title"></h2>
+      <div class="modal-buttons">
+        <button class="primary" id="modal-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>Play</button>
+        <button class="circle" id="modal-fav">♡</button>
+        <button class="circle" onclick="shareMemory()">↗</button>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <div class="hero-meta" id="modal-meta"></div>
+          <p class="modal-desc" id="modal-desc"></p>
+        </div>
+        <div class="credits" id="credits"></div>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </div>
+</div>
+
+<div class="player" id="player">
+  <div class="player-frame" id="player-frame"></div>
+  <div class="player-frame-next" id="player-frame-next"></div>
+  <div class="player-vignette"></div>
+  <button class="player-back" onclick="closePlayer()">← <span>Back to Browse</span></button>
+  <button class="skip-intro" id="skip-intro" onclick="skipIntro()">Skip Intro</button>
+  <div class="player-controls">
+    <div class="bar"><span id="playbar"></span></div>
+    <div class="player-row">
+      <button class="round play" id="pause" onclick="togglePlayer()">Ⅱ</button>
+      <div>
+        <div class="player-title" id="player-title"></div>
+        <div class="player-meta" id="player-meta"></div>
+      </div>
+      <div class="timer" id="timer">0:00 / 0:00</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const memories = [
+  {
+    id:'snowflake', title:'Snowflake Lane', year:'2025', date:'Early December', duration:'One sparkling evening',
+    genre:['Holiday','Firsts','Quiet Moments'], location:'Bellevue, WA', match:'98% Match',
+    desc:'Before Christmas arrived, we found our own holiday magic under the lights, wrapped in scarves and moving slowly through the crowd.',
+    main:'snowflake lane 1.jpg', photos:['snowflake lane 1.jpg','snowflake lane 2.jpg'], watched:62,
+    cast:'Stella & Dima', featuring:'Snowflakes, lights, hot chocolate', captured:'Stella'
+  },
+  {
+    id:'whistler', title:'Whistler Ski Trip', year:'2025', date:'Late December', duration:'Post-Christmas weekend',
+    genre:['Skiing','Adventure','Winter'], location:'Whistler, BC', match:'99% Match',
+    desc:'Right after Christmas: cold air, fresh powder, mountain views, and the kind of weekend that makes winter feel cinematic.',
+    main:'whistler 1.jpg', photos:['whistler 1.jpg','whistler 2.jpg'], watched:48,
+    cast:'Stella & Dima', featuring:'The mountain itself', captured:'Dima'
+  },
+  {
+    id:'offspring', title:'The Offspring Concert', year:'2026', date:'January', duration:'One electric night',
+    genre:['Music','Live','Energy'], location:'Vancouver, BC', match:'97% Match',
+    desc:'The year started loud: guitars, lights, crowds, and both of us screaming lyrics like the whole room belonged to the memory.',
+    main:'offspring 1.jpg', photos:['offspring 1.jpg','offspring 2.jpg','offspring 3.jpg','offspring 4.jpg'], watched:75,
+    cast:'Stella & Dima', featuring:'A very loud crowd', captured:'The both of us'
+  },
+  {
+    id:'valentines', title:"Valentine's Day", year:'2026', date:'February', duration:'One perfect night',
+    genre:['Romance','Milestone','Dinner'], location:'Vancouver, BC', match:'100% Match',
+    desc:'Red dresses, too many flowers, and a night that made all the big gestures feel quiet next to just being together.',
+    main:'valentines 1.jpg', photos:['valentines 1.jpg','valentines 2.jpg','valentines 3.jpg','valentines 4.jpg'], watched:100,
+    cast:'Stella & Dima', featuring:'Roses and candlelight', captured:'A kind stranger'
+  },
+  {
+    id:'birthday', title:"Dima's Birthday", year:'2026', date:'March 1', duration:'All-day celebration',
+    genre:['Celebration','Milestone','Cake'], location:'Vancouver, BC', match:'100% Match',
+    desc:'A perfect birthday celebration: cake, surprises, and the best person to share another year with.',
+    main:'birthday 1.jpg', photos:['birthday 1.jpg','birthday 2.jpg','birthday 3.jpg'], watched:88,
+    cast:'Stella & Dima', featuring:'Cake and surprises', captured:'Stella'
+  },
+  {
+    id:'blossoms', title:'Cherry Blossoms', year:'2026', date:'March', duration:'Two slow hours',
+    genre:['Nature','Quiet Moments','Spring'], location:'Vancouver, BC', match:'99% Match',
+    desc:'The city turned pink around us. We walked through petals slowly, like the whole day had agreed to wait.',
+    main:'cherry blossom 1.jpg', photos:['cherry blossom 1.jpg','cherry blossom 2.jpg','cherry blossom 3.jpg'], watched:31,
+    cast:'Stella & Dima', featuring:'Thousands of blossoms', captured:'Each other'
+  }
+];
+
+const rows = [
+  {title:'Continue Watching', sub:'You paused halfway through telling this story', ids:['blossoms','whistler','snowflake']},
+  {title:"Stella's Picks", sub:'Curated with love', ids:['valentines','birthday','offspring','blossoms']},
+  {title:'Trending Now', sub:'Most replayed memories', ids:['birthday','valentines','whistler','offspring']},
+  {title:'Winter Adventures', sub:'Snow, concerts, and city lights', ids:['whistler','snowflake','offspring']},
+  {title:'Classics', sub:'The collection foundations', ids:['snowflake','offspring','valentines']}
+];
+
+let currentHero = 0;
+let modalMemory = null;
+let playerMemory = null;
+let playerIndex = 0;
+let playerTime = 0;
+let playerTimer = null;
+let playerPaused = false;
+const secondsPerPhoto = 4.5;
+const favs = new Set(JSON.parse(localStorage.getItem('sf-favs') || '[]'));
+
+function introCanvas(){
+  const canvas = document.getElementById('intro-canvas');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  const palette = ['#e50914','#f6121d','#b20710','#7a0006','#260002','#ffffff','#f6b400','#ff4b55'];
+  const bands = Array.from({length: 150}, () => {
+    const sign = Math.random() > 0.5 ? 1 : -1;
+    const x3d = sign * Math.pow(Math.random(), 1.5); 
+    const z3d = (Math.random() - 0.5) * 6; // -3 to +3 depth variance
+    return {
+      x3d,
+      z3d,
+      wavePhase: Math.random() * Math.PI * 2,
+      waveSpeed: Math.random() * 10 + 5,
+      waveAmp: Math.random() * 0.02 + 0.01,
+      baseW: Math.random() * 6 + 1.5,
+      baseA: Math.random() > 0.85 ? 0.95 : Math.random() * 0.5 + 0.2,
+      colorOffset: Math.floor(Math.random() * palette.length)
+    };
+  });
+  function resize(){
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  addEventListener('resize', resize, {once:true});
+  const start = performance.now();
+
+  const introSound = new Audio('Netflix Intro 1080p (Highest Quality).mp3');
+  introSound.play().catch(e => console.warn('Intro sound autoplay blocked:', e));
+
+  const iconImg = new Image();
+  iconImg.src = 'icon_transparent.png';
+
+  function drawMonogram(cx, cy, scale, alpha, focus=1, stretchY=1){
+    if (!iconImg.complete || !iconImg.naturalWidth) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    
+    const sizeX = 220 * scale;
+    const sizeY = sizeX * stretchY;
+    
+    if (focus < 1) {
+      ctx.shadowColor = 'rgba(229,9,20,0.8)';
+      ctx.shadowBlur = 60 * (1 - focus);
+    }
+    
+    ctx.drawImage(iconImg, cx - sizeX/2, cy - sizeY/2, sizeX, sizeY);
+    ctx.restore();
+  }
+
+  function drawBands(progress, cx, cy, zCam, camProgress){
+    const height = innerHeight * (1.1 + camProgress * 0.4);
+    const y = (innerHeight - height) / 2;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    
+    for(let i=0;i<150;i++){
+      const b = bands[i];
+      const distance = b.z3d + zCam;
+      if (distance <= 0.1) continue;
+      
+      const scale = 12 / distance;
+      const wave = Math.sin(b.wavePhase + progress*b.waveSpeed) * b.waveAmp;
+      
+      const screenX = cx + (b.x3d + wave) * 110 * scale;
+      const screenW = b.baseW * scale;
+      
+      const depthFade = Math.min(1, distance / 1.5);
+      const globalFade = (1 - Math.max(0, progress - 0.85) * 6.6);
+      const introFade = Math.min(1, progress * 4); // Fade in quickly to look like bursting from S
+      const a = b.baseA * depthFade * globalFade * introFade;
+      if (a <= 0) continue;
+      
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = palette[(b.colorOffset + Math.floor(progress*18)) % palette.length];
+      
+      const u = Math.abs(b.x3d);
+      const centerBias = Math.pow(u, 1.45);
+      ctx.fillRect(screenX, y - centerBias*18*scale, screenW, height + centerBias*36*scale);
+    }
+    ctx.restore();
+
+    const glow = ctx.createRadialGradient(cx,cy,10,cx,cy,innerWidth*.48);
+    glow.addColorStop(0,`rgba(229,9,20,${.46*(1-progress)})`);
+    glow.addColorStop(.38,`rgba(255,255,255,${.12*(1-progress)})`);
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+  }
+
+  function frame(now){
+    const t = Math.min((now - start) / 2050, 1);
+    const cx = innerWidth/2;
+    const cy = innerHeight/2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    if(t < .2){
+      const p = easeOutCubic(t/.2);
+      drawMonogram(cx, cy, 0.82 + p*.18, p, 1);
+    } else if(t < .39){
+      const p = (t-.2)/.19;
+      drawMonogram(cx, cy, 1 + p*.06, 1, 1);
+      ctx.fillStyle = `rgba(229,9,20,${0.18*(1-p)})`;
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+    } else {
+      const p = (t-.39)/.61;
+      const camProgress = Math.pow(p, 1.8);
+      const zCam = 18 * (1 - camProgress) + 0.1;
+      
+      const scale = 19.08 / zCam;
+      const stretchY = 1 + Math.pow(p, 2.5) * 40;
+      const alpha = Math.max(0, 1 - Math.pow(p, 1.5) * 1.5);
+      
+      drawMonogram(cx, cy, scale, alpha, 1, stretchY);
+      drawBands(p, cx, cy, zCam, camProgress);
+    }
+
+    if(t < 1) requestAnimationFrame(frame);
+    else finishIntro();
+  }
+  requestAnimationFrame(frame);
+}
+function easeOutCubic(x){return 1 - Math.pow(1-x,3)}
+function finishIntro(){
+  document.getElementById('intro').classList.add('done');
+  document.getElementById('profiles').classList.add('active');
+}
+
+function selectProfile(name){
+  const p = document.getElementById('profiles');
+  p.style.opacity = '0';
+  setTimeout(() => {
+    p.style.display = 'none';
+    document.getElementById('app').classList.add('ready');
+    document.body.style.overflow = 'auto';
+    showToast(`Welcome back, ${name}`);
+  }, 400);
+}
+
+function $(id){return document.getElementById(id)}
+function memory(id){return memories.find(m => m.id === id)}
+function hearts(){return '❤❤❤❤❤'}
+function saveFavs(){localStorage.setItem('sf-favs', JSON.stringify([...favs]))}
+function showToast(text){
+  const toast = $('toast');
+  toast.textContent = text;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>toast.style.opacity='0', 2200);
+}
+
+function setHero(index){
+  currentHero = index;
+  const m = memories[index];
+  const bg = $('hero-bg'), next = $('hero-bg-next');
+  next.style.backgroundImage = `url("${m.main}")`;
+  next.style.opacity = '1';
+  setTimeout(()=>{ bg.style.backgroundImage = `url("${m.main}")`; next.style.opacity = '0'; }, 850);
+  $('hero-title').textContent = m.title;
+  $('hero-meta').innerHTML = `<span class="match">${m.match}</span><span>${m.year}</span><span>${m.date}</span><span class="age">S+D</span><span>${m.duration}</span>`;
+  $('hero-desc').textContent = m.desc;
+  [...$('hero-dots').children].forEach((dot,i)=>dot.classList.toggle('active', i===index));
+}
+
+function buildHeroDots(){
+  $('hero-dots').innerHTML = memories.map((_,i)=>`<span class="dot${i===0?' active':''}" onclick="setHero(${i})"></span>`).join('');
+}
+
+function buildRows(list = rows){
+  $('rows').innerHTML = list.map(row => {
+    const isTrending = row.title === 'Trending Now';
+    return `
+    <section class="row" id="${isTrending ? 'recently' : ''}">
+      <div class="row-head"><h2 class="row-title">${row.title}</h2><span class="row-sub">${row.sub}</span></div>
+      <div class="rail">
+        ${row.ids.map(id => card(memory(id), isTrending)).join('')}
+      </div>
+    </section>
+  `}).join('');
+}
+
+function card(m, isTrending = false){
+  if(!m) return '';
+  const top10 = isTrending ? `<div class="top10-badge">TOP<br>10</div>` : '';
+  return `
+    <article class="card" style="background-image:url('${m.main}')" onclick="openModal('${m.id}')">
+      ${top10}
+      <div class="progress"><span style="width:${m.watched}%"></span></div>
+      <div class="card-panel" onclick="event.stopPropagation()">
+        <div class="card-actions">
+          <button class="round play" onclick="openPlayer('${m.id}')">▶</button>
+          <button class="round" onclick="toggleFav('${m.id}')">${favs.has(m.id) ? '♥' : '♡'}</button>
+          <button class="round" onclick="openModal('${m.id}')">⌄</button>
+        </div>
+        <div class="card-name">${m.title}</div>
+        <div class="card-data"><span class="match">${m.match}</span><span>${m.year}</span><span>${m.duration}</span><span class="hearts">${hearts()}</span></div>
+      </div>
+    </article>
+  `;
+}
+
+function toggleFav(id){
+  favs.has(id) ? favs.delete(id) : favs.add(id);
+  saveFavs();
+  showToast(favs.has(id) ? 'Added to Favorites' : 'Removed from Favorites');
+  buildRows();
+  if(modalMemory && modalMemory.id === id) $('modal-fav').textContent = favs.has(id) ? '♥' : '♡';
+}
+
+function showFavorites(event){
+  event.preventDefault();
+  if(!favs.size){ showToast('No favorites yet'); return; }
+  const ids = [...favs];
+  buildRows([{title:'Favorites', sub:'Saved memories', ids}]);
+  document.getElementById('memories').scrollIntoView({behavior:'smooth'});
+}
+
+function openModal(id){
+  const m = memory(id);
+  modalMemory = m;
+  $('modal-hero').style.backgroundImage = `url('${m.main}')`;
+  $('modal-title').textContent = m.title;
+  $('modal-meta').innerHTML = `<span class="match">${m.match}</span><span>${m.year}</span><span>${m.date}</span><span>${m.duration}</span><span class="hearts">${hearts()}</span>`;
+  $('modal-desc').textContent = m.desc;
+  $('credits').innerHTML = `<div><b>Starring:</b> ${m.cast}</div><div><b>Featuring:</b> ${m.featuring}</div><div><b>Captured by:</b> ${m.captured}</div><div><b>Location:</b> ${m.location}</div>`;
+  $('gallery').innerHTML = m.photos.map((p,i)=>`<div class="thumb" style="background-image:url('${p}')" onclick="openPlayer('${m.id}',${i})"></div>`).join('');
+  $('modal-play').onclick = ()=>openPlayer(m.id);
+  $('modal-fav').textContent = favs.has(m.id) ? '♥' : '♡';
+  $('modal-fav').onclick = ()=>toggleFav(m.id);
+  $('modal').classList.add('open');
+}
+function closeModal(){ $('modal').classList.remove('open') }
+function closeModalOnBackdrop(e){ if(e.target.id === 'modal') closeModal() }
+function shareMemory(){
+  if(!modalMemory) return;
+  const link = `${location.href.split('#')[0]}#${modalMemory.id}`;
+  navigator.clipboard ? navigator.clipboard.writeText(link).then(()=>showToast('Link copied')) : showToast(modalMemory.id);
+}
+
+function openPlayer(id, startIndex=0){
+  const m = memory(id);
+  playerMemory = m;
+  playerIndex = startIndex;
+  playerTime = startIndex * secondsPerPhoto;
+  playerPaused = false;
+  $('pause').textContent = 'Ⅱ';
+  $('player-title').textContent = m.title;
+  $('player-meta').textContent = `${m.date} • ${m.year} • ${m.location}`;
+  $('player-frame').style.backgroundImage = `url('${m.photos[playerIndex]}')`;
+  $('player-frame-next').style.opacity = '0';
+  $('player').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  
+  const skipBtn = $('skip-intro');
+  if(skipBtn) {
+    skipBtn.style.display = 'block';
+    setTimeout(() => { if(skipBtn) skipBtn.style.display = 'none'; }, 6000);
+  }
+
+  clearInterval(playerTimer);
+  playerTimer = setInterval(tickPlayer, 100);
+  updatePlayer();
+}
+
+function skipIntro(){
+  playerTime += 15;
+  $('skip-intro').style.display = 'none';
+  const total = playerMemory ? playerMemory.photos.length * secondsPerPhoto : 0;
+  if (playerTime >= total) playerTime = total - 0.1;
+  const newIndex = Math.floor(playerTime / secondsPerPhoto);
+  if(playerMemory && newIndex !== playerIndex) {
+    playerIndex = newIndex;
+    const next = $('player-frame-next'), current = $('player-frame');
+    next.style.backgroundImage = `url('${playerMemory.photos[playerIndex]}')`;
+    next.style.opacity = '1';
+    setTimeout(()=>{
+      current.style.backgroundImage = next.style.backgroundImage;
+      next.style.opacity = '0';
+    }, 560);
+  }
+  updatePlayer();
+}
+function tickPlayer(){
+  if(playerPaused || !playerMemory) return;
+  playerTime += .1;
+  const total = playerMemory.photos.length * secondsPerPhoto;
+  if(playerTime >= total) playerTime = 0;
+  const nextIndex = Math.floor(playerTime / secondsPerPhoto);
+  if(nextIndex !== playerIndex){
+    playerIndex = nextIndex;
+    const next = $('player-frame-next'), current = $('player-frame');
+    next.style.backgroundImage = `url('${playerMemory.photos[playerIndex]}')`;
+    next.style.opacity = '1';
+    setTimeout(()=>{
+      current.style.backgroundImage = next.style.backgroundImage;
+      next.style.opacity = '0';
+    }, 560);
+  }
+  updatePlayer();
+}
+function updatePlayer(){
+  if(!playerMemory) return;
+  const total = playerMemory.photos.length * secondsPerPhoto;
+  $('playbar').style.width = `${(playerTime/total)*100}%`;
+  $('timer').textContent = `${fmt(playerTime)} / ${fmt(total)}`;
+}
+function fmt(s){ const m = Math.floor(s/60), sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}` }
+function togglePlayer(){ playerPaused = !playerPaused; $('pause').textContent = playerPaused ? '▶' : 'Ⅱ' }
+function closePlayer(){
+  clearInterval(playerTimer);
+  $('player').classList.remove('open');
+  playerMemory = null;
+  document.body.style.overflow = 'auto';
+}
+
+function toggleSearch(){
+  $('search-shell').classList.toggle('open');
+  if($('search-shell').classList.contains('open')) $('search').focus();
+}
+function runSearch(q){
+  q = q.trim().toLowerCase();
+  if(!q){ buildRows(); return; }
+  const ids = memories.filter(m => [m.title,m.date,m.location,m.duration,...m.genre].join(' ').toLowerCase().includes(q)).map(m=>m.id);
+  buildRows([{title:'Search Results', sub:`${ids.length} match${ids.length===1?'':'es'}`, ids}]);
+}
+function toggleMusic(){
+  const audio = $('ambient-audio'), btn = $('music');
+  if(audio.paused){
+    audio.volume = .16;
+    audio.play().then(()=>{ btn.classList.add('active'); showToast('Ambient music on'); }).catch((e)=>showToast('Audio playback failed: ' + e.message));
+  } else {
+    audio.pause();
+    btn.classList.remove('active');
+    showToast('Ambient music off');
+  }
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){ closeModal(); closePlayer(); }
+  if(e.key === ' ' && playerMemory){ e.preventDefault(); togglePlayer(); }
+});
+window.addEventListener('scroll', ()=>$('nav').classList.toggle('scrolled', scrollY > 32));
+window.addEventListener('DOMContentLoaded', ()=>{
+  buildHeroDots();
+  setHero(0);
+  buildRows();
+  setInterval(()=>setHero((currentHero+1)%memories.length), 9000);
+  
+  const startScreen = document.createElement('div');
+  startScreen.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;color:#e50914;font-size:14px;letter-spacing:6px;cursor:pointer;transition:opacity 0.6s ease;font-weight:600;font-family:Inter,sans-serif;';
+  startScreen.innerHTML = '<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} .pulsing{animation:pulse 2s infinite}</style><span class="pulsing">TAP TO ENTER</span>';
+  document.body.appendChild(startScreen);
+  
+  startScreen.addEventListener('click', () => {
+    startScreen.style.opacity = '0';
+    setTimeout(() => {
+      startScreen.remove();
+      introCanvas();
+    }, 600);
+  });
+});
+</script>
+</body>
+</html>
