@@ -120,7 +120,7 @@ button{border:0;cursor:pointer}
 .row-head{display:flex;align-items:baseline;gap:10px;padding:0 4vw;margin-bottom:-20px;position:relative;z-index:2}
 .row-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .row-sub{font-size:13px;color:var(--muted);font-weight:500}
-.rail{display:flex;gap:8px;overflow-x:auto;padding:30px 4vw 140px;scrollbar-width:none;touch-action:pan-x}
+.rail{display:flex;gap:8px;overflow-x:auto;padding:30px 4vw 140px;scrollbar-width:none}
 .rail::-webkit-scrollbar{display:none}
 .card{
   flex:0 0 244px;height:137px;border-radius:3px;background-size:cover;background-position:center;background-color:#202020;
@@ -751,6 +751,24 @@ window.addEventListener('DOMContentLoaded', ()=>{
   buildHeroDots();
   setHero(0);
   buildRows();
+
+  document.addEventListener('touchstart', e => {
+    const rail = e.target.closest('.rail');
+    if (!rail) return;
+    rail._tx = e.touches[0].pageX;
+    rail._ty = e.touches[0].pageY;
+    rail._dir = null;
+  }, {passive: true});
+  document.addEventListener('touchmove', e => {
+    const rail = e.target.closest('.rail');
+    if (!rail) return;
+    if (!rail._dir) {
+      const dx = Math.abs(e.touches[0].pageX - rail._tx);
+      const dy = Math.abs(e.touches[0].pageY - rail._ty);
+      if (dx > 4 || dy > 4) rail._dir = dx > dy ? 'x' : 'y';
+    }
+    if (rail._dir === 'x') e.preventDefault();
+  }, {passive: false});
   setInterval(()=>setHero((currentHero+1)%memories.length), 9000);
   
   const startScreen = document.createElement('div');
