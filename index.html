@@ -48,8 +48,8 @@ button{border:0;cursor:pointer}
 
 /* Navigation */
 .nav{
-  position:fixed;inset:0 0 auto 0;height:68px;z-index:100;display:flex;align-items:center;
-  padding:0 4vw;background:linear-gradient(to bottom,rgba(0,0,0,.86),rgba(0,0,0,.55) 46%,transparent);
+  position:fixed;inset:0 0 auto 0;height:calc(68px + env(safe-area-inset-top));z-index:100;display:flex;align-items:center;
+  padding:env(safe-area-inset-top) 4vw 0;background:linear-gradient(to bottom,rgba(0,0,0,.86),rgba(0,0,0,.55) 46%,transparent);
   transition:background .28s ease;
 }
 .nav.scrolled{background:#0b0b0b}
@@ -205,7 +205,7 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   .coming-soon{padding:40px 20px;margin:30px 18px 0}
   .cs-title{font-size:28px}
   .cs-desc{font-size:14px}
-  .nav{padding:0 18px;height:54px}.brand{font-size:26px;margin-right:10px}.nav-links{display:none}.search-shell.open{width:140px}
+  .nav{padding:env(safe-area-inset-top) 18px 0;height:calc(54px + env(safe-area-inset-top))}.brand{font-size:26px;margin-right:10px}.nav-links{display:none}.search-shell.open{width:140px}
   .nav-right{gap:12px}
   .profile{width:28px;height:28px}
   .profile::after{font-size:16px}
