@@ -585,14 +585,18 @@ function showToast(text){
 function setHero(index){
   currentHero = index;
   const m = memories[index];
-  const bg = $('hero-bg'), next = $('hero-bg-next');
-  next.style.backgroundImage = `url("${m.main}")`;
-  next.style.opacity = '1';
-  setTimeout(()=>{ bg.style.backgroundImage = `url("${m.main}")`; next.style.opacity = '0'; }, 850);
   $('hero-title').textContent = m.title;
   $('hero-meta').innerHTML = `<span class="match">${m.match}</span><span>${m.year}</span><span>${m.date}</span><span class="age">S+D</span><span>${m.duration}</span>`;
   $('hero-desc').textContent = m.desc;
   [...$('hero-dots').children].forEach((dot,i)=>dot.classList.toggle('active', i===index));
+  const preload = new Image();
+  preload.onload = preload.onerror = () => {
+    const bg = $('hero-bg'), next = $('hero-bg-next');
+    next.style.backgroundImage = `url("${m.main}")`;
+    next.style.opacity = '1';
+    setTimeout(()=>{ bg.style.backgroundImage = `url("${m.main}")`; next.style.opacity = '0'; }, 900);
+  };
+  preload.src = m.main;
 }
 
 function buildHeroDots(){
@@ -672,6 +676,7 @@ function shareMemory(){
 
 function openPlayer(id, startIndex=0){
   const m = memory(id);
+  m.photos.forEach(src => { new Image().src = src; });
   playerMemory = m;
   playerIndex = startIndex;
   playerTime = startIndex * secondsPerPhoto;
@@ -696,13 +701,15 @@ function tickPlayer(){
   const nextIndex = Math.floor(playerTime / secondsPerPhoto);
   if(nextIndex !== playerIndex){
     playerIndex = nextIndex;
+    const src = playerMemory.photos[playerIndex];
     const next = $('player-frame-next'), current = $('player-frame');
-    next.style.backgroundImage = `url('${playerMemory.photos[playerIndex]}')`;
-    next.style.opacity = '1';
-    setTimeout(()=>{
-      current.style.backgroundImage = next.style.backgroundImage;
-      next.style.opacity = '0';
-    }, 560);
+    const img = new Image();
+    img.onload = img.onerror = () => {
+      next.style.backgroundImage = `url('${src}')`;
+      next.style.opacity = '1';
+      setTimeout(()=>{ current.style.backgroundImage = `url('${src}')`; next.style.opacity = '0'; }, 600);
+    };
+    img.src = src;
   }
   updatePlayer();
 }
@@ -754,19 +761,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   buildRows();
 
   setInterval(()=>setHero((currentHero+1)%memories.length), 9000);
-  
-  const startScreen = document.createElement('div');
-  startScreen.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;color:#e50914;font-size:14px;letter-spacing:6px;cursor:pointer;transition:opacity 0.6s ease;font-weight:600;font-family:Inter,sans-serif;';
-  startScreen.innerHTML = '<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} .pulsing{animation:pulse 2s infinite}</style><span class="pulsing">TAP TO ENTER</span>';
-  document.body.appendChild(startScreen);
-  
-  startScreen.addEventListener('click', () => {
-    startScreen.style.opacity = '0';
-    setTimeout(() => {
-      startScreen.remove();
-      introCanvas();
-    }, 600);
-  });
+  introCanvas();
 });
 </script>
 </body>
