@@ -139,6 +139,8 @@ button{border:0;cursor:pointer}
 .round{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid #aaa;background:transparent;color:#fff;font-size:12px}
 .round.play{background:#fff;color:#000;border-color:#fff}
 .round:hover{border-color:#fff}
+.round svg{width:13px;height:13px}
+.circle svg{width:19px;height:19px}
 .card-name{font-size:12px;font-weight:800;margin-bottom:4px}
 .card-data{display:flex;gap:7px;align-items:center;font-size:10px;color:#bdbdbd;flex-wrap:wrap}
 .hearts{color:var(--red);letter-spacing:1px}
@@ -168,8 +170,8 @@ button{border:0;cursor:pointer}
 .player-frame,.player-frame-next{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center;transition:opacity .55s ease}
 .player-frame-next{opacity:0}
 .player-vignette{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72),transparent 38%),linear-gradient(to bottom,rgba(0,0,0,.55),transparent 22%)}
-.player-back{position:absolute;top:30px;left:34px;display:flex;align-items:center;gap:14px;color:#fff;background:transparent;font-size:20px;font-weight:800;z-index:3;white-space:nowrap}
-.player-controls{position:absolute;left:36px;right:36px;bottom:28px;z-index:3}
+.player-back{position:absolute;top:max(30px,calc(env(safe-area-inset-top) + 16px));left:34px;display:flex;align-items:center;gap:14px;color:#fff;background:transparent;font-size:20px;font-weight:800;z-index:3;white-space:nowrap}
+.player-controls{position:absolute;left:36px;right:36px;bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px));z-index:3}
 .bar{height:4px;background:rgba(255,255,255,.26);border-radius:3px;overflow:hidden;margin-bottom:20px}
 .bar span{display:block;height:100%;width:0;background:var(--red)}
 .player-row{display:flex;align-items:center;gap:18px}
@@ -220,8 +222,8 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   .modal-grid{grid-template-columns:1fr;gap:20px}.modal-hero{height:220px}.modal-body{padding:0 18px 24px;margin-top:-60px}.modal-title{font-size:28px}
   .modal-buttons{margin-bottom:12px;flex-wrap:wrap}
   .circle{width:36px;height:36px;font-size:16px}
-  .player-back{top:18px;left:18px;font-size:16px}
-  .player-controls{left:18px;right:18px;bottom:18px}
+  .player-back{top:max(18px,calc(env(safe-area-inset-top) + 12px));left:18px;font-size:16px}
+  .player-controls{left:18px;right:18px;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px))}
   .player-row{gap:12px;flex-wrap:wrap}
   .player-title{font-size:16px}
 }
@@ -314,8 +316,8 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
       <h2 class="modal-title" id="modal-title"></h2>
       <div class="modal-buttons">
         <button class="primary" id="modal-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>Play</button>
-        <button class="circle" id="modal-fav">♡</button>
-        <button class="circle" onclick="shareMemory()">↗</button>
+        <button class="circle" id="modal-fav"></button>
+        <button class="circle" onclick="shareMemory()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>
       </div>
       <div class="modal-grid">
         <div>
@@ -337,7 +339,7 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   <div class="player-controls">
     <div class="bar"><span id="playbar"></span></div>
     <div class="player-row">
-      <button class="round play" id="pause" onclick="togglePlayer()">Ⅱ</button>
+      <button class="round play" id="pause" onclick="togglePlayer()"></button>
       <div>
         <div class="player-title" id="player-title"></div>
         <div class="player-meta" id="player-meta"></div>
@@ -350,6 +352,14 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
 <div class="toast" id="toast"></div>
 
 <script>
+const IC = {
+  play:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`,
+  pause:   `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,
+  heart:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  heartOn: `<svg viewBox="0 0 24 24" fill="#e50914" stroke="#e50914" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  info:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+};
+
 const memories = [
   {
     id:'snowflake', title:'Snowflake Lane', year:'2025', date:'Early December', duration:'One sparkling evening',
@@ -609,9 +619,9 @@ function card(m, isTrending = false){
       <div class="progress"><span style="width:${m.watched}%"></span></div>
       <div class="card-panel" onclick="event.stopPropagation()">
         <div class="card-actions">
-          <button class="round play" onclick="openPlayer('${m.id}')">▶</button>
-          <button class="round" onclick="toggleFav('${m.id}')">${favs.has(m.id) ? '♥' : '♡'}</button>
-          <button class="round" onclick="openModal('${m.id}')">⌄</button>
+          <button class="round play" onclick="openPlayer('${m.id}')">${IC.play}</button>
+          <button class="round" onclick="toggleFav('${m.id}')">${favs.has(m.id) ? IC.heartOn : IC.heart}</button>
+          <button class="round" onclick="openModal('${m.id}')">${IC.info}</button>
         </div>
         <div class="card-name">${m.title}</div>
         <div class="card-data"><span class="match">${m.match}</span><span>${m.year}</span><span>${m.duration}</span><span class="hearts">${hearts()}</span></div>
@@ -625,7 +635,7 @@ function toggleFav(id){
   saveFavs();
   showToast(favs.has(id) ? 'Added to Favorites' : 'Removed from Favorites');
   buildRows();
-  if(modalMemory && modalMemory.id === id) $('modal-fav').textContent = favs.has(id) ? '♥' : '♡';
+  if(modalMemory && modalMemory.id === id) $('modal-fav').innerHTML = favs.has(id) ? IC.heartOn : IC.heart;
 }
 
 function showFavorites(event){
@@ -646,7 +656,7 @@ function openModal(id){
   $('credits').innerHTML = `<div><b>Starring:</b> ${m.cast}</div><div><b>Featuring:</b> ${m.featuring}</div><div><b>Captured by:</b> ${m.captured}</div><div><b>Location:</b> ${m.location}</div>`;
   $('gallery').innerHTML = m.photos.map((p,i)=>`<div class="thumb" style="background-image:url('${p}')" onclick="openPlayer('${m.id}',${i})"></div>`).join('');
   $('modal-play').onclick = ()=>openPlayer(m.id);
-  $('modal-fav').textContent = favs.has(m.id) ? '♥' : '♡';
+  $('modal-fav').innerHTML = favs.has(m.id) ? IC.heartOn : IC.heart;
   $('modal-fav').onclick = ()=>toggleFav(m.id);
   $('modal').classList.add('open');
 }
@@ -664,7 +674,7 @@ function openPlayer(id, startIndex=0){
   playerIndex = startIndex;
   playerTime = startIndex * secondsPerPhoto;
   playerPaused = false;
-  $('pause').textContent = 'Ⅱ';
+  $('pause').innerHTML = IC.pause;
   $('player-title').textContent = m.title;
   $('player-meta').textContent = `${m.date} • ${m.year} • ${m.location}`;
   $('player-frame').style.backgroundImage = `url('${m.photos[playerIndex]}')`;
@@ -701,7 +711,7 @@ function updatePlayer(){
   $('timer').textContent = `${fmt(playerTime)} / ${fmt(total)}`;
 }
 function fmt(s){ const m = Math.floor(s/60), sec = Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}` }
-function togglePlayer(){ playerPaused = !playerPaused; $('pause').textContent = playerPaused ? '▶' : 'Ⅱ' }
+function togglePlayer(){ playerPaused = !playerPaused; $('pause').innerHTML = playerPaused ? IC.play : IC.pause; }
 function closePlayer(){
   clearInterval(playerTimer);
   $('player').classList.remove('open');
