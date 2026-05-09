@@ -765,7 +765,19 @@ window.addEventListener('DOMContentLoaded', ()=>{
   buildRows();
 
   setInterval(()=>setHero((currentHero+1)%memories.length), 9000);
-  introCanvas();
+
+  const startScreen = document.createElement('div');
+  startScreen.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;color:#e50914;font-size:14px;letter-spacing:6px;cursor:pointer;transition:opacity 0.6s ease;font-weight:600;font-family:Inter,sans-serif;';
+  startScreen.innerHTML = '<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} .pulsing{animation:pulse 2s infinite}</style><span class="pulsing">TAP TO ENTER</span>';
+  document.body.appendChild(startScreen);
+
+  startScreen.addEventListener('click', () => {
+    startScreen.style.opacity = '0';
+    setTimeout(() => {
+      startScreen.remove();
+      introCanvas();
+    }, 600);
+  });
 });
 </script>
 </body>
