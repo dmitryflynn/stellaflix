@@ -753,23 +753,6 @@ window.addEventListener('DOMContentLoaded', ()=>{
   setHero(0);
   buildRows();
 
-  document.addEventListener('touchstart', e => {
-    const rail = e.target.closest('.rail');
-    if (!rail) return;
-    rail._tx = e.touches[0].pageX;
-    rail._ty = e.touches[0].pageY;
-    rail._dir = null;
-  }, {passive: true});
-  document.addEventListener('touchmove', e => {
-    const rail = e.target.closest('.rail');
-    if (!rail) return;
-    if (!rail._dir) {
-      const dx = Math.abs(e.touches[0].pageX - rail._tx);
-      const dy = Math.abs(e.touches[0].pageY - rail._ty);
-      if (dx > 4 || dy > 4) rail._dir = dx > dy ? 'x' : 'y';
-    }
-    if (rail._dir === 'x') e.preventDefault();
-  }, {passive: false});
   setInterval(()=>setHero((currentHero+1)%memories.length), 9000);
   
   const startScreen = document.createElement('div');
