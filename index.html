@@ -75,12 +75,11 @@ button{border:0;cursor:pointer}
 .search-shell.open{width:260px;opacity:1;border-color:#555}
 .search-shell input{width:100%;height:34px;background:transparent;border:0;color:#fff;outline:0;padding:0 12px;font-size:13px}
 .profile{
-  width:34px;height:34px;border-radius:4px;background:var(--red);
+  width:34px;height:34px;border-radius:4px;background:var(--red) url('stella-profile.jpg') center top/cover;
   color:#fff;display:grid;place-items:center;cursor:pointer;
   transition:transform .2s,opacity .2s;
 }
 .profile:hover{opacity:.84;transform:scale(1.05)}
-.profile::after{content:"S";font-family:var(--logo);font-size:20px;margin-top:2px}
 
 /* Hero */
 .hero{position:relative;height:86vh;min-height:610px;display:flex;align-items:flex-end;overflow:hidden;background:#000}
@@ -237,7 +236,7 @@ footer{padding:44px 4vw 54px;border-top:1px solid #151515;color:#777;text-align:
   <h1>Who's watching?</h1>
   <div class="profiles-list">
     <div class="profile-card" onclick="selectProfile('Stella')">
-      <div class="avatar" style="background-image: url('cherry blossom 2.jpg');"></div>
+      <div class="avatar" style="background-image: url('stella-profile.jpg'); background-position: center top;"></div>
       <div class="name">Stella</div>
     </div>
     <div class="profile-card" onclick="selectProfile('Dima')">
