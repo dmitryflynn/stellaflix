@@ -138,6 +138,11 @@ button{border:0;cursor:pointer}
   .card:hover::before{opacity:1}
   .card:hover .card-panel{opacity:1;pointer-events:auto;transform:translateY(0)}
 }
+/* TV / keyboard focus ring */
+:focus{outline:none}
+:focus-visible{outline:3px solid rgba(255,255,255,.88);outline-offset:3px;border-radius:3px}
+.card:focus-visible{outline:3px solid var(--red);outline-offset:4px;transform:scale(1.1);z-index:20;box-shadow:0 0 0 3px var(--red),0 12px 40px rgba(0,0,0,.85)}
+.dot:focus-visible{outline:2px solid #fff;outline-offset:4px}
 .round{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid #aaa;background:transparent;color:#fff;font-size:12px}
 .round.play{background:#fff;color:#000;border-color:#fff}
 .round:hover{border-color:#fff}
@@ -604,7 +609,7 @@ function setHero(index){
 }
 
 function buildHeroDots(){
-  $('hero-dots').innerHTML = memories.map((_,i)=>`<span class="dot${i===0?' active':''}" onclick="setHero(${i})"></span>`).join('');
+  $('hero-dots').innerHTML = memories.map((_,i)=>`<span class="dot${i===0?' active':''}" onclick="setHero(${i})" tabindex="0"></span>`).join('');
 }
 
 function buildRows(list = rows){
@@ -624,7 +629,7 @@ function card(m, isTrending = false){
   if(!m) return '';
   const top10 = isTrending ? `<div class="top10-badge">TOP<br>10</div>` : '';
   return `
-    <article class="card" style="background-image:url('${m.main}')" onclick="openModal('${m.id}')">
+    <article class="card" tabindex="0" style="background-image:url('${m.main}')" onclick="openModal('${m.id}')">
       ${top10}
       <div class="progress"><span style="width:${m.watched}%"></span></div>
       <div class="card-panel" onclick="event.stopPropagation()">
@@ -678,7 +683,9 @@ function shareMemory(){
   navigator.clipboard ? navigator.clipboard.writeText(link).then(()=>showToast('Link copied')) : showToast(modalMemory.id);
 }
 
+let _playerReturnFocus = null;
 function openPlayer(id, startIndex=0){
+  _playerReturnFocus = document.activeElement;
   const m = memory(id);
   m.photos.forEach(src => { new Image().src = src; });
   playerMemory = m;
@@ -692,7 +699,7 @@ function openPlayer(id, startIndex=0){
   $('player-frame-next').style.opacity = '0';
   $('player').classList.add('open');
   document.body.style.overflow = 'hidden';
-  
+  setTimeout(()=>$('pause').focus({preventScroll:true}), 50);
   clearInterval(playerTimer);
   playerTimer = setInterval(tickPlayer, 100);
   updatePlayer();
@@ -730,6 +737,7 @@ function closePlayer(){
   $('player').classList.remove('open');
   playerMemory = null;
   document.body.style.overflow = 'auto';
+  if(_playerReturnFocus){ setTimeout(()=>{ _playerReturnFocus.focus({preventScroll:true}); _playerReturnFocus=null; },50); }
 }
 
 function toggleSearch(){
@@ -754,6 +762,71 @@ function toggleMusic(){
   }
 }
 
+// ── TV / D-pad remote navigation ─────────────────────────────────────────────
+function tvFocus(el){
+  if(!el) return;
+  el.focus({preventScroll:true});
+  el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
+document.addEventListener('keydown', e=>{
+  if(document.activeElement?.tagName === 'INPUT') return;
+
+  // Player open: arrows scrub photos, Enter toggles play/pause
+  if($('player').classList.contains('open')){
+    if(e.key==='ArrowLeft'){ e.preventDefault(); playerTime=Math.max(0,playerTime-secondsPerPhoto); updatePlayer(); return; }
+    if(e.key==='ArrowRight'){ e.preventDefault(); playerTime=Math.min(playerMemory.photos.length*secondsPerPhoto-0.01,playerTime+secondsPerPhoto); updatePlayer(); return; }
+    if(e.key==='Enter'){ e.preventDefault(); togglePlayer(); return; }
+  }
+
+  // Escape / Space handled separately below; skip arrow logic for modal
+  if($('modal').classList.contains('open')) return;
+
+  const active = document.activeElement;
+  const card = active?.closest('.card');
+  const row  = card?.closest('.row');
+  const allRows = [...document.querySelectorAll('#rows .row')];
+
+  if(e.key==='Enter' && active && active!==document.body){ active.click(); return; }
+
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    e.preventDefault();
+    const dir = e.key==='ArrowRight' ? 1 : -1;
+    if(card && row){
+      const cards=[...row.querySelectorAll('.card')];
+      const next=cards[cards.indexOf(card)+dir];
+      if(next) tvFocus(next);
+    } else {
+      const items=[...document.querySelectorAll('.hero-actions button, .dot')];
+      const idx=items.indexOf(active);
+      const next=items[Math.max(0,Math.min(items.length-1, idx+dir))];
+      if(next) tvFocus(next);
+    }
+    return;
+  }
+
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();
+    const dir = e.key==='ArrowDown' ? 1 : -1;
+    if(card && row){
+      const rowIdx=allRows.indexOf(row);
+      const cards=[...row.querySelectorAll('.card')];
+      const colIdx=cards.indexOf(card);
+      const nextRowIdx=rowIdx+dir;
+      if(nextRowIdx<0){
+        tvFocus(document.querySelector('.hero-actions button'));
+      } else if(nextRowIdx<allRows.length){
+        const nextCards=[...allRows[nextRowIdx].querySelectorAll('.card')];
+        tvFocus(nextCards[Math.min(colIdx,nextCards.length-1)]??nextCards[0]);
+      }
+    } else if(dir===1){
+      const first=document.querySelector('#rows .card');
+      if(first) tvFocus(first);
+    }
+    return;
+  }
+});
+
 document.addEventListener('keydown', e=>{
   if(e.key === 'Escape'){ closeModal(); closePlayer(); }
   if(e.key === ' ' && playerMemory){ e.preventDefault(); togglePlayer(); }
@@ -776,6 +849,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     setTimeout(() => {
       startScreen.remove();
       introCanvas();
+      setTimeout(()=>document.querySelector('.hero-actions button')?.focus({preventScroll:true}), 900);
     }, 600);
   });
 });
