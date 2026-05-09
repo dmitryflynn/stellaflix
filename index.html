@@ -457,7 +457,11 @@ function introCanvas(){
   const start = performance.now();
 
   const introSound = new Audio('Netflix Intro 1080p (Highest Quality).mp3');
-  introSound.play().catch(e => console.warn('Intro sound autoplay blocked:', e));
+  const playIntroSound = () => introSound.play().catch(()=>{});
+  introSound.play().catch(() => {
+    document.addEventListener('touchstart', playIntroSound, {once:true});
+    document.addEventListener('click', playIntroSound, {once:true});
+  });
 
   const iconImg = new Image();
   iconImg.src = 'icon_transparent.png';
