@@ -119,7 +119,7 @@ button{border:0;cursor:pointer}
 .row-head{display:flex;align-items:baseline;gap:10px;padding:0 4vw;margin-bottom:-20px;position:relative;z-index:2}
 .row-title{font-size:20px;font-weight:800;letter-spacing:-.01em}
 .row-sub{font-size:13px;color:var(--muted);font-weight:500}
-.rail{display:flex;gap:8px;overflow-x:auto;padding:30px 4vw 140px;scrollbar-width:none}
+.rail{display:flex;gap:8px;overflow-x:auto;padding:30px 4vw 140px;scrollbar-width:none;touch-action:pan-x}
 .rail::-webkit-scrollbar{display:none}
 .card{
   flex:0 0 244px;height:137px;border-radius:3px;background-size:cover;background-position:center;background-color:#202020;
@@ -366,42 +366,42 @@ const memories = [
     genre:['Holiday','Firsts','Quiet Moments'], location:'Bellevue, WA', match:'98% Match',
     desc:'Before Christmas arrived, we found our own holiday magic under the lights, wrapped in scarves and moving slowly through the crowd.',
     main:'snowflake lane 1.jpg', photos:['snowflake lane 1.jpg','snowflake lane 2.jpg'], watched:62,
-    cast:'Stella & Dima', featuring:'Snowflakes, lights, hot chocolate', captured:'Stella'
+    cast:'Stella & Dima', featuring:'Snowflakes, lights, hot chocolate', captured:'A kind stranger'
   },
   {
     id:'whistler', title:'Whistler Ski Trip', year:'2025', date:'Late December', duration:'Post-Christmas weekend',
     genre:['Skiing','Adventure','Winter'], location:'Whistler, BC', match:'99% Match',
     desc:'Right after Christmas: cold air, fresh powder, mountain views, and the kind of weekend that makes winter feel cinematic.',
     main:'whistler 1.jpg', photos:['whistler 1.jpg','whistler 2.jpg'], watched:48,
-    cast:'Stella & Dima', featuring:'The mountain itself', captured:'Dima'
+    cast:'Stella & Dima', featuring:'The mountain itself', captured:'A kind stranger'
   },
   {
     id:'offspring', title:'The Offspring Concert', year:'2026', date:'January', duration:'One electric night',
     genre:['Music','Live','Energy'], location:'Vancouver, BC', match:'97% Match',
     desc:'The year started loud: guitars, lights, crowds, and both of us screaming lyrics like the whole room belonged to the memory.',
     main:'offspring 1.jpg', photos:['offspring 1.jpg','offspring 2.jpg','offspring 3.jpg','offspring 4.jpg'], watched:75,
-    cast:'Stella & Dima', featuring:'A very loud crowd', captured:'The both of us'
+    cast:'Stella & Dima', featuring:'A very loud crowd', captured:'Dima'
   },
   {
     id:'valentines', title:"Valentine's Day", year:'2026', date:'February', duration:'One perfect night',
     genre:['Romance','Milestone','Dinner'], location:'Vancouver, BC', match:'100% Match',
     desc:'Red dresses, too many flowers, and a night that made all the big gestures feel quiet next to just being together.',
     main:'valentines 1.jpg', photos:['valentines 1.jpg','valentines 2.jpg','valentines 3.jpg','valentines 4.jpg'], watched:100,
-    cast:'Stella & Dima', featuring:'Roses and candlelight', captured:'A kind stranger'
+    cast:'Stella & Dima', featuring:'Roses and candlelight', captured:"Dima's mom"
   },
   {
     id:'birthday', title:"Dima's Birthday", year:'2026', date:'March 1', duration:'All-day celebration',
     genre:['Celebration','Milestone','Cake'], location:'Vancouver, BC', match:'100% Match',
     desc:'A perfect birthday celebration: cake, surprises, and the best person to share another year with.',
     main:'birthday 1.jpg', photos:['birthday 1.jpg','birthday 2.jpg','birthday 3.jpg'], watched:88,
-    cast:'Stella & Dima', featuring:'Cake and surprises', captured:'Stella'
+    cast:'Stella & Dima', featuring:'Cake and surprises', captured:'The waiter'
   },
   {
     id:'blossoms', title:'Cherry Blossoms', year:'2026', date:'March', duration:'Two slow hours',
     genre:['Nature','Quiet Moments','Spring'], location:'Vancouver, BC', match:'99% Match',
     desc:'The city turned pink around us. We walked through petals slowly, like the whole day had agreed to wait.',
     main:'cherry blossom 1.jpg', photos:['cherry blossom 1.jpg','cherry blossom 2.jpg','cherry blossom 3.jpg'], watched:31,
-    cast:'Stella & Dima', featuring:'Thousands of blossoms', captured:'Each other'
+    cast:'Stella & Dima', featuring:'Thousands of blossoms', captured:'A kind stranger'
   }
 ];
 
